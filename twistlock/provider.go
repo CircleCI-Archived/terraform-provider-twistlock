@@ -30,7 +30,8 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("TWISTLOCK_BASE_URL", os.Getenv("TWISTLOCK_BASE_URL"))},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"twistlock_user": resourceUser(),
+			"twistlock_user":         resourceUser(),
+			"twistlock_machine_user": resourceMachineUser(),
 		},
 		ConfigureFunc: configureProvider,
 	}
