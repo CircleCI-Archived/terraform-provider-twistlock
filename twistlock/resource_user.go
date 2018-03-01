@@ -104,7 +104,29 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
-	return resourceUserCreate(d, m)
+	client := m.(client.Client)
+	needsUpdate := false
+	var userUpdate model.User
+
+	if d.HasChange("role") {
+		needsUpdate = true
+		role := d.Get("role").(string)
+		userUpdate.Role.UnmarshalText([]byte(role))
+	}
+	if d.HasChange("auth_type") {
+		needsUpdate = true
+		authType := d.Get("auth_type").(string)
+		userUpdate.AuthType.UnmarshalText([]byte(authType))
+	}
+
+	if needsUpdate {
+		_, err := client.UpdateUser(&userUpdate)
+		if err != nil {
+			return err
+		}
+	}
+
+	return resourceUserRead(d, m)
 }
 
 func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
