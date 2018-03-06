@@ -87,18 +87,9 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	roleText, err := u.Role.MarshalText()
-	if err != nil {
-		return err
-	}
-	authTypeText, err := u.AuthType.MarshalText()
-	if err != nil {
-		return err
-	}
-
 	d.Set("username", u.Username)
-	d.Set("role", string(roleText))
-	d.Set("auth_type", string(authTypeText))
+	d.Set("role", string(u.Role))
+	d.Set("auth_type", string(u.AuthType))
 
 	return nil
 }
@@ -106,21 +97,19 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(client.Client)
 	needsUpdate := false
-	var userUpdate model.User
+	userUpdate := userFromResource(d)
+	// Prevent accidental password changes by ensuring this field is blank
+	userUpdate.Password = ""
 
 	if d.HasChange("role") {
 		needsUpdate = true
-		role := d.Get("role").(string)
-		userUpdate.Role.UnmarshalText([]byte(role))
 	}
 	if d.HasChange("auth_type") {
 		needsUpdate = true
-		authType := d.Get("auth_type").(string)
-		userUpdate.AuthType.UnmarshalText([]byte(authType))
 	}
 
 	if needsUpdate {
-		_, err := client.UpdateUser(&userUpdate)
+		_, err := client.UpdateUser(userUpdate)
 		if err != nil {
 			return err
 		}

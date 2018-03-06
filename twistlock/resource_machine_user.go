@@ -4,7 +4,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/circleci/terraform-provider-twistlock/client"
-	"github.com/circleci/terraform-provider-twistlock/model"
 )
 
 func resourceMachineUser() *schema.Resource {
@@ -42,17 +41,15 @@ func resourceMachineUserCreate(d *schema.ResourceData, m interface{}) error {
 func resourceMachineUserUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(client.Client)
 	needsUpdate := false
-	var userUpdate model.User
+	userUpdate := userFromResource(d)
+	// Prevent accidental password changes by ensuring this field is blank
+	userUpdate.Password = ""
 
 	if d.HasChange("role") {
 		needsUpdate = true
-		role := d.Get("role").(string)
-		userUpdate.Role.UnmarshalText([]byte(role))
 	}
 	if d.HasChange("auth_type") {
 		needsUpdate = true
-		authType := d.Get("auth_type").(string)
-		userUpdate.AuthType.UnmarshalText([]byte(authType))
 	}
 	if d.HasChange("password") {
 		needsUpdate = true
@@ -60,7 +57,7 @@ func resourceMachineUserUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if needsUpdate {
-		_, err := client.UpdateUser(&userUpdate)
+		_, err := client.UpdateUser(userUpdate)
 		if err != nil {
 			return err
 		}
