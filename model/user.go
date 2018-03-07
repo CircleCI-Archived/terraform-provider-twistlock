@@ -16,7 +16,7 @@ type UserService interface {
 type User struct {
 	ID           string       `json:"_id"`
 	Username     string       `json:"username"`
-	Password     string       `json:"password"`
+	Password     string       `json:"password,omitempty"`
 	Role         UserRole     `json:"role"`
 	AuthType     UserAuthType `json:"authType"`
 	LastModified time.Time    `json:"lastModified"`
