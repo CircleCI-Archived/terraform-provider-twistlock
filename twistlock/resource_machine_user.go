@@ -45,6 +45,10 @@ func resourceMachineUserUpdate(d *schema.ResourceData, m interface{}) error {
 	// Prevent accidental password changes by ensuring this field is blank
 	userUpdate.Password = ""
 
+	if d.HasChange("username") {
+		return errImmutableUsername
+	}
+
 	if d.HasChange("role") {
 		needsUpdate = true
 	}

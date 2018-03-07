@@ -2,6 +2,7 @@ package twistlock
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/circleci/terraform-provider-twistlock/client"
@@ -53,6 +54,37 @@ func TestAccMachineUser(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccMachineUser_CannotMutateImmutableUserProperties(t *testing.T) {
+	username := acctest.RandString(8)
+	password := acctest.RandString(10)
+
+	immutableUsernameError, err := regexp.Compile("Twistlock usernames are immutable")
+	if err != nil {
+		t.Fatalf("Could not compile username check regular expression")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		CheckDestroy: testAccUserDestroy,
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccMachineUser_BasicConfig(username, password, model.RoleUser, model.AuthTypeBasic),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "username", username),
+					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "password", password),
+					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "role", string(model.RoleUser)),
+					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "auth_type", string(model.AuthTypeBasic)),
+				),
+			},
+			resource.TestStep{
+				Config:      testAccMachineUser_BasicConfig(username+"new", password, model.RoleUser, model.AuthTypeBasic),
+				ExpectError: immutableUsernameError,
+			}}})
 }
 
 func testAccMachineUserDestroy(s *terraform.State) error {
