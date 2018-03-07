@@ -53,10 +53,20 @@ func TestAccUser(t *testing.T) {
 			resource.TestStep{
 				Config: testAccUser_BasicConfig(username, "testdata/test-gpg-keys/terraform.pub", model.RoleUser, model.AuthTypeBasic),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("twistlock_user.circleci", "username", username),
-					resource.TestCheckResourceAttr("twistlock_user.circleci", "pgp_key", terraformTestPublicKey),
-					resource.TestCheckResourceAttr("twistlock_user.circleci", "role", string(model.RoleUser)),
-					resource.TestCheckResourceAttr("twistlock_user.circleci", "auth_type", string(model.AuthTypeBasic)),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "username", username),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "pgp_key", terraformTestPublicKey),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "role", string(model.RoleUser)),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "auth_type", string(model.AuthTypeBasic)),
+					testAccUser_GeneratedPassword,
+				),
+			},
+			resource.TestStep{
+				Config: testAccUser_BasicConfig(username, "testdata/test-gpg-keys/terraform.pub", model.RoleDefenderManager, model.AuthTypeBasic),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "username", username),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "pgp_key", terraformTestPublicKey),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "role", string(model.RoleDefenderManager)),
+					resource.TestCheckResourceAttr("twistlock_user.test_user", "auth_type", string(model.AuthTypeBasic)),
 					testAccUser_GeneratedPassword,
 				),
 			},
@@ -105,7 +115,7 @@ func testAccUser_GeneratedPassword(s *terraform.State) error {
 
 func testAccUser_BasicConfig(username, publicKeyFile string, role model.UserRole, auth model.UserAuthType) string {
 	return fmt.Sprintf(`
-		resource "twistlock_user" "circleci" {
+		resource "twistlock_user" "test_user" {
 			"username" = "%s"
 			"pgp_key" = "${file("%s")}"
 			"role" = "%s"
@@ -113,6 +123,6 @@ func testAccUser_BasicConfig(username, publicKeyFile string, role model.UserRole
 		}
 
 		output "password" {
-			value = "${twistlock_user.circleci.encrypted_password}"
+			value = "${twistlock_user.test_user.encrypted_password}"
 		}`, username, publicKeyFile, role, auth)
 }
