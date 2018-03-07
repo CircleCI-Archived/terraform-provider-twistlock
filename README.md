@@ -22,6 +22,20 @@ Run tests with
 $ TF_ACC=true go test -v twistlock/*.go
 ```
 
+### Re-generating keys for the User resource tests
+
+User resources require PGP keys to generate passwords. The tests use known keys
+to verify that the encrypted, generated password can be decrypted.
+
+The secret key must have no passphrase in order to be usable during tests
+
+Re-generate the keys with:
+```bash
+$ gpg --batch --gen-key gpg-key-generate.control
+$ gpg --export terraform-provider-twistlock@acceptance.test | base64 --break=76 > twistlock/testdata/test-gpg-keys/terraform.pub
+$ gpg --export-secret-keys terraform-provider-twistlock@acceptance.tes | base64 --break=76 > twistlock/testdata/test-gpg-keys/terraform.priv
+$ gpg --delete-secret-and-public-key terraform-provider-twistlock@acceptance.test
+```
 
 ## Sample terraform file
 ```
