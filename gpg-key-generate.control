@@ -1,0 +1,10 @@
+%echo generating a default key
+Key-Type: default
+Subkey-Type: default
+Name-Real: Terraform Twistlock Provider Test
+Name-Comment: This keypair is only used for testing terraform-provider-twistlock. Do not use to encrypt anything important, the private key is in source control.
+Name-Email: terraform-provider-twistlock@acceptance.test
+Expire-Date: 0
+%no-protection
+%commit
+%echo done

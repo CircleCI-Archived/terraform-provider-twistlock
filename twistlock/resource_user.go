@@ -1,6 +1,8 @@
 package twistlock
 
 import (
+	"errors"
+
 	"github.com/hashicorp/terraform/helper/encryption"
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -8,6 +10,8 @@ import (
 	"github.com/circleci/terraform-provider-twistlock/model"
 	"github.com/circleci/terraform-provider-twistlock/password"
 )
+
+var errImmutableUsername = errors.New("Twistlock usernames are immutable and may not be changed after a user is created")
 
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
@@ -100,6 +104,10 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 	userUpdate := userFromResource(d)
 	// Prevent accidental password changes by ensuring this field is blank
 	userUpdate.Password = ""
+
+	if d.HasChange("username") {
+		return errImmutableUsername
+	}
 
 	if d.HasChange("role") {
 		needsUpdate = true
