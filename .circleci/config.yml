@@ -21,9 +21,6 @@ jobs:
             # previous one a new cache will be saved.
             - v1-build-tools-
       - run:
-          name: Install dependencies
-          command: go get -t github.com/circleci/terraform-provider-twistlock/...
-      - run:
           name: Install go-junit-report
           command: |
             mkdir -p ${TEST_REPORTS}
