@@ -1,0 +1,68 @@
+version: 2
+
+references:
+  golang_image: &golang_image
+    image: golang:1.10
+
+jobs:
+  test:
+    docker:
+      - *golang_image
+    working_directory: /go/src/github.com/circleci/terraform-provider-twistlock
+    environment:
+      TEST_REPORTS: /tmp/test-reports
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            # Always restore the latest cache. Rebuild without cache
+            # to force a re-download of go-junit-report. If the new
+            # go-junit-report binary has a different checksum to the
+            # previous one a new cache will be saved.
+            - v1-build-tools-
+      - run:
+          name: Install dependencies
+          command: go get -t github.com/circleci/terraform-provider-twistlock/...
+      - run:
+          name: Install go-junit-report
+          command: |
+            mkdir -p ${TEST_REPORTS}
+            if [[ ! -e /go/bin/go-junit-report ]]; then
+              go get -v -u github.com/jstemmer/go-junit-report
+            fi
+      - save_cache:
+          key: v1-build-tools-{{ checksum "/go/bin/go-junit-report" }}
+          paths:
+            - /go/bin/go-junit-report
+      - run:
+          name: make check
+          command: |
+            set -o pipefail
+            make check | tee ${TEST_REPORTS}/go-test.out
+      - run:
+          name: Generate junit report
+          when: always
+          command:
+            go-junit-report <${TEST_REPORTS}/go-test.out > ${TEST_REPORTS}/go-test-report.xml || true
+      - run:
+          name: Code Coverage
+          when: always
+          command: |
+            curl \
+              --fail \
+              --verbose \
+              --include \
+              --header 'Accept: text/plain' \
+              --data-binary @coverage.out \
+              "https://codecov.io/upload/v2?service=circleci&token=$CODECOV_TOKEN&commit=$CIRCLE_SHA1&branch=$CIRCLE_BRANCH&build=$CIRCLE_BUILD_NUM&job=$CIRCLE_NODE_INDEX&build_url=$CIRCLE_BUILD_URL&slug=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME&pr=${CI_PULL_REQUEST##*/}"
+      - store_artifacts:
+          path: /tmp/test-reports
+          destination: raw-test-output
+      - store_test_results:
+          path: /tmp/test-reports
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test
