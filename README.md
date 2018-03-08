@@ -6,6 +6,11 @@ $ go install
 $ terraform init
 ```
 
+## Running tests
+```bash
+$ make test
+```
+
 ## Running acceptance tests
 Acceptance tests require a local running Twistlock Console.
 
@@ -19,7 +24,7 @@ $   export TWISTLOCK_BASE_URL=http://localhost:8081/api/v1
 
 Run tests with
 ```bash
-$ TF_ACC=true go test -v twistlock/*.go
+$ make acceptance-test
 ```
 
 ### Re-generating keys for the User resource tests
