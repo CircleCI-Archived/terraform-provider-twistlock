@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"net/http"
 )
 
@@ -11,11 +12,16 @@ type Client struct {
 	http     http.Client
 }
 
-func NewClient(username, password, baseURL string) Client {
+func NewClient(username, password, baseURL string, skipTLSVerify bool) Client {
 	return Client{
 		username: username,
 		password: password,
 		baseURL:  baseURL,
-		http:     http.Client{},
+		http: http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: skipTLSVerify,
+				},
+			}},
 	}
 }
