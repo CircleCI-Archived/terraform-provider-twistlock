@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"time"
 )
@@ -22,37 +21,21 @@ type User struct {
 	LastModified time.Time    `json:"lastModified"`
 }
 
-type UserRole int
+func (u User) String() string {
+	return fmt.Sprintf("{ID: %s, Username: %s, Role: %s, AuthType: %s, LastModified: %s}",
+		u.ID, u.Username, u.Role, u.AuthType, u.LastModified)
+}
+
+type UserRole string
 
 const (
-	RoleAdmin UserRole = iota
-	RoleOperator
-	RoleDefenderManager
-	RoleAuditor
-	RoleUser
-	RoleCI
+	RoleAdmin           UserRole = "admin"
+	RoleOperator        UserRole = "operator"
+	RoleDefenderManager UserRole = "defenderManager"
+	RoleAuditor         UserRole = "auditor"
+	RoleUser            UserRole = "user"
+	RoleCI              UserRole = "ci"
 )
-
-func (r *UserRole) MarshalText() (text []byte, err error) {
-	switch *r {
-	case RoleAdmin:
-		text = []byte("admin")
-	case RoleOperator:
-		text = []byte("operator")
-	case RoleDefenderManager:
-		text = []byte("defenderManager")
-	case RoleAuditor:
-		text = []byte("auditor")
-	case RoleUser:
-		text = []byte("user")
-	case RoleCI:
-		text = []byte("ci")
-	default:
-		err = errors.New("Attempted to MarshalText invalid UserRole")
-	}
-
-	return text, err
-}
 
 func (r *UserRole) UnmarshalText(text []byte) error {
 	switch string(text) {
@@ -69,33 +52,18 @@ func (r *UserRole) UnmarshalText(text []byte) error {
 	case "ci":
 		*r = RoleCI
 	default:
-		return fmt.Errorf("Attempted to UnmarshalText invalid UserRole: %s", string(text))
+		return fmt.Errorf("Invalid UserRole: %s", string(text))
 	}
 	return nil
 }
 
-type UserAuthType int
+type UserAuthType string
 
 const (
-	AuthTypeBasic UserAuthType = iota
-	AuthTypeLDAP
-	AuthTypeSAML
+	AuthTypeBasic UserAuthType = "basic"
+	AuthTypeLDAP  UserAuthType = "ldap"
+	AuthTypeSAML  UserAuthType = "saml"
 )
-
-func (a *UserAuthType) MarshalText() (text []byte, err error) {
-	switch *a {
-	case AuthTypeBasic:
-		text = []byte("basic")
-	case AuthTypeLDAP:
-		text = []byte("ldap")
-	case AuthTypeSAML:
-		text = []byte("saml")
-	default:
-		err = errors.New("Attempted to MarshalText invalid UserAuthType")
-	}
-
-	return text, err
-}
 
 func (a *UserAuthType) UnmarshalText(text []byte) error {
 	switch string(text) {
@@ -106,7 +74,7 @@ func (a *UserAuthType) UnmarshalText(text []byte) error {
 	case "saml":
 		*a = AuthTypeSAML
 	default:
-		return fmt.Errorf("Attempted to UnmarshalText invalid UserAuthType: %s", string(text))
+		return fmt.Errorf("Invalid UserAuthType: %s", string(text))
 	}
 	return nil
 }
