@@ -11,7 +11,7 @@ acceptance-test:
 
 fmt:
 	@echo gofmt
-	@if gofmt -l $(shell find . -name '*.go') | grep . ; then exit 1; fi
+	@if gofmt -l $(shell find . -name '*.go' -not -path './vendor/*') | grep . ; then exit 1; fi
 
 # NB: there is no need to run `go vet`, `go test` runs `vet` and fails
 # accordingly
