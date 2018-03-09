@@ -75,7 +75,7 @@ resource "twistlock_user" "bob" {
 }
 
 # Output Bob's encrypted password after running. Only Bob will be able to
-# decrypt this.
+# decrypt this since only Bob has the corresponding private key.
 output "password" {
   value = "${twistlock_user.bob.encrypted_password}"
 }
