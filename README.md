@@ -1,9 +1,24 @@
 # Terraform Twistlock Provider
 
-## Building the provider
+## Installing the plugin
 ```bash
-$ go install
-$ terraform init
+$ go get -u github.com/circleci/terraform-provider-twistlock
+```
+
+Make sure that `${GOPATH}/bin` is on your `${PATH}`, if not add it:
+```bash
+$ export PATH=${PATH}:${GOPATH}/bin
+```
+
+Call `terraform init` before running other Terraform commands in a directory
+that contains Twistlock configuration. Terraform will tell you to do this if it
+hasn't configured the Twistlock plugin before, or if you have upgraded the
+plugin.
+
+
+## Building the provider locally
+```bash
+$ make install
 ```
 
 ## Running tests
