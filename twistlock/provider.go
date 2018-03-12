@@ -45,6 +45,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"twistlock_user":         resourceUser(),
 			"twistlock_machine_user": resourceMachineUser(),
+			"twistlock_cve_policy":   resourceCVEPolicy(),
 		},
 		ConfigureFunc: configureProvider,
 	}
