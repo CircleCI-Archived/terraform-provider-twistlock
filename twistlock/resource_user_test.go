@@ -54,10 +54,12 @@ func TestAccUser(t *testing.T) {
 			resource.TestStep{
 				Config: testAccUser_BasicConfig(username, "testdata/test-gpg-keys/terraform.pub", model.RoleUser, model.AuthTypeBasic),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "username", username),
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "pgp_key", terraformTestPublicKey),
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "role", string(model.RoleUser)),
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "auth_type", string(model.AuthTypeBasic)),
+					CheckTerraformState("twistlock_user.test_user", AttrMap{
+						"username":  AttrLeaf(username),
+						"pgp_key":   AttrLeaf(terraformTestPublicKey),
+						"role":      AttrLeaf(model.RoleUser),
+						"auth_type": AttrLeaf(model.AuthTypeBasic),
+					}),
 					testAccUser_GeneratedPassword,
 				),
 			},
@@ -65,10 +67,12 @@ func TestAccUser(t *testing.T) {
 			resource.TestStep{
 				Config: testAccUser_BasicConfig(username, "testdata/test-gpg-keys/terraform.pub", model.RoleDefenderManager, model.AuthTypeBasic),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "username", username),
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "pgp_key", terraformTestPublicKey),
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "role", string(model.RoleDefenderManager)),
-					resource.TestCheckResourceAttr("twistlock_user.test_user", "auth_type", string(model.AuthTypeBasic)),
+					CheckTerraformState("twistlock_user.test_user", AttrMap{
+						"username":  AttrLeaf(username),
+						"pgp_key":   AttrLeaf(terraformTestPublicKey),
+						"role":      AttrLeaf(model.RoleDefenderManager),
+						"auth_type": AttrLeaf(model.AuthTypeBasic),
+					}),
 					testAccUser_GeneratedPassword,
 				),
 			},

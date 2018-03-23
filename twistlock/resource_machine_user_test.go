@@ -62,7 +62,7 @@ func TestAccMachineUser_CannotMutateImmutableUserProperties(t *testing.T) {
 
 	immutableUsernameError, err := regexp.Compile("Twistlock usernames are immutable")
 	if err != nil {
-		t.Fatalf("Could not compile username check regular expression")
+		t.Fatal("Could not compile username check regular expression")
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -74,12 +74,12 @@ func TestAccMachineUser_CannotMutateImmutableUserProperties(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccMachineUser_BasicConfig(username, password, model.RoleUser, model.AuthTypeBasic),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "username", username),
-					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "password", password),
-					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "role", string(model.RoleUser)),
-					resource.TestCheckResourceAttr("twistlock_machine_user.test_user", "auth_type", string(model.AuthTypeBasic)),
-				),
+				Check: CheckTerraformState("twistlock_machine_user.test_user", AttrMap{
+					"username":  AttrLeaf(username),
+					"password":  AttrLeaf(password),
+					"role":      AttrLeaf(model.RoleUser),
+					"auth_type": AttrLeaf(model.AuthTypeBasic),
+				}),
 			},
 			resource.TestStep{
 				Config:      testAccMachineUser_BasicConfig(username+"new", password, model.RoleUser, model.AuthTypeBasic),
