@@ -90,4 +90,36 @@ resource "twistlock_machine_user" "ci_user" {
   "role" = "ci"
   "auth_type" = "basic"
 }
+
+
+# `cve_policy` represents the CVE policy on a Twistlock Console. There can be
+# only one CVE policy resource.
+# The policy cannot be created or deleted, it can only be changed.
+#
+# If terraform is asked to delete the CVE policy resource it will instead
+# delete all the rules from the policy.
+resource "twistlock_cve_policy" "cve_policy" {
+  rules = [{
+     "owner" = "system"
+     "name" = "Main catch-all CVE rule"
+     "resources" {
+       "hosts" = ["*"]
+       "images" = ["*"]
+       "labels" = ["*"]
+       "containers" = ["*"]
+     }
+     "condition" = {
+       "vulnerabilities" = [
+         {"id" = 46, "block" = true, "minimum_severity" = 9}
+       ]
+       "cves" = {
+         "ids" = ["CVE-2017-1234"]
+         "effect" = "alert"
+         "only_fixed" = true
+       }
+     }
+     "block_message" = "This action has been blocked"
+     "verbose" = "true"}
+  ]
+}
 ```
