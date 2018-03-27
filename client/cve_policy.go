@@ -2,9 +2,9 @@ package client
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/circleci/terraform-provider-twistlock/model"
@@ -14,14 +14,10 @@ var cvePolicyPath = "/policies/cve"
 
 func (c *Client) UpdateCVEPolicy(p *model.CVEPolicy) (model.CVEPolicy, error) {
 	url := c.baseURL + cvePolicyPath
-	p.PolicyType = "cve"
-	p.ID = "cve"
-	policyJson, err := json.Marshal(p)
-	if err != nil {
-		return model.CVEPolicy{}, err
-	}
 
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(policyJson))
+	log.Printf("[WARN] creating CVE policy %s", p.PolicyJSON)
+
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer([]byte(p.PolicyJSON)))
 	if err != nil {
 		return model.CVEPolicy{}, err
 	}
@@ -67,12 +63,12 @@ func (c *Client) ReadCVEPolicy() (model.CVEPolicy, error) {
 		return model.CVEPolicy{}, fmt.Errorf("Failed to read CVE policy: %s", string(body))
 	}
 
-	cvePolicy := model.CVEPolicy{}
-
-	decoder := json.NewDecoder(resp.Body)
-	if err = decoder.Decode(&cvePolicy); err != nil {
+	policyJSON, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return model.CVEPolicy{}, err
 	}
 
-	return cvePolicy, nil
+	return model.CVEPolicy{
+		PolicyJSON: string(policyJSON),
+	}, nil
 }

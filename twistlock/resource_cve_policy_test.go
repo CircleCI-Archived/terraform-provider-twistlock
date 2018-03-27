@@ -1,10 +1,11 @@
 package twistlock
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
-	"time"
 
 	"github.com/circleci/terraform-provider-twistlock/client"
 	"github.com/circleci/terraform-provider-twistlock/model"
@@ -22,138 +23,36 @@ func TestAccCVEPolicy(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCVEPolicy_BasicConfig(),
-				Check: resource.ComposeTestCheckFunc(
-					CheckTerraformState("twistlock_cve_policy.test_cve_policy", AttrMap{
-						"rules": AttrList{
-							AttrMap{
-								"owner":         AttrLeaf("test_user"),
-								"name":          AttrLeaf("Twistlock acceptance test CVE policy"),
-								"verbose":       AttrLeaf("true"),
-								"block_message": AttrLeaf(""),
-								"resources": AttrList{
-									AttrMap{
-										"hosts":      AttrList{AttrLeaf("*")},
-										"images":     AttrList{AttrLeaf("*"), AttrLeaf("foo/*")},
-										"labels":     AttrList{AttrLeaf("*")},
-										"containers": AttrList{AttrLeaf("*")},
-									},
+				/*Check: testAccCheckCreated(model.CVEPolicy{
+					PolicyJSON: `
+						{
+							"version": "",
+							"rules": [{
+								"owner": "test_user",
+								"name": "Twistlock acceptance test CVE policy",
+								"modified":"2018-03-27T10:21:54.85Z",
+								"resources": {
+									"hosts": ["*"],
+									"images": ["*", "foo/*"],
+									"labels": ["*"],
+									"containers": ["*"]
 								},
-								"condition": AttrList{
-									AttrMap{
-										"vulnerabilities": AttrList{
-											AttrMap{
-												"id":               AttrLeaf("46"),
-												"block":            AttrLeaf("true"),
-												"minimum_severity": AttrLeaf("9"),
-											}},
-										"cves": AttrList{
-											AttrMap{
-												"ids":        AttrList{AttrLeaf("CVE-2017-1234")},
-												"effect":     AttrLeaf("alert"),
-												"only_fixed": AttrLeaf("true"),
-											},
-										},
-									},
+								"condition": {
+									"vulnerabilities": [
+										{"id": 46, "block": true, "minSeverity": 9}
+									],
+									"cves": {
+										"ids": ["CVE-2017-1234"],
+										"effect": "alert",
+										"onlyFixed": true
+									}
 								},
-							}}}),
-					testAccCheckCreated(model.CVEPolicy{
-						Rules: []model.CVEPolicyRule{{
-							Modified: time.Time{},
-							Owner:    "test_user",
-							Name:     "Twistlock acceptance test CVE policy",
-							Resources: map[string][]string{
-								"hosts":      {"*"},
-								"images":     {"*", "foo/*"},
-								"containers": {"*"},
-								"labels":     {"*"},
-							},
-							Condition: model.CVECondition{
-								Vulnerabilities: []model.CVEVulnerability{
-									{ID: 46, Block: true, MinimumSeverity: 9},
-								},
-								CVEs: model.CVERule{
-									IDs:       []string{"CVE-2017-1234"},
-									Effect:    model.CVEEffectAlert,
-									OnlyFixed: true,
-								},
-							},
-							Verbose: true,
-						}},
-						PolicyType: "cve",
-						ID:         "cve",
-					}),
-				),
-			},
-			resource.TestStep{
-				Config: testAccCVEPolicy_UpdateConfig(),
-				Check: resource.ComposeTestCheckFunc(
-					CheckTerraformState("twistlock_cve_policy.test_cve_policy", AttrMap{
-						"rules": AttrList{
-							AttrMap{
-								"owner":         AttrLeaf("test_user"),
-								"name":          AttrLeaf("Twistlock acceptance test CVE policy"),
-								"verbose":       AttrLeaf("true"),
-								"block_message": AttrLeaf("Not permitted"),
-								"resources": AttrList{
-									AttrMap{
-										"hosts":      AttrList{AttrLeaf("foo/*")},
-										"images":     AttrList{AttrLeaf("*")},
-										"labels":     AttrList{AttrLeaf("*")},
-										"containers": AttrList{AttrLeaf("*")},
-									},
-								},
-								"condition": AttrList{
-									AttrMap{
-										"vulnerabilities": AttrList{
-											AttrMap{
-												"id":               AttrLeaf("46"),
-												"block":            AttrLeaf("true"),
-												"minimum_severity": AttrLeaf("7"),
-											},
-											AttrMap{
-												"id":               AttrLeaf("413"),
-												"block":            AttrLeaf("false"),
-												"minimum_severity": AttrLeaf("9"),
-											}},
-										"cves": AttrList{
-											AttrMap{
-												"ids":        AttrList{AttrLeaf("CVE-2017-1234"), AttrLeaf("CVE-2017-2308")},
-												"effect":     AttrLeaf("ignore"),
-												"only_fixed": AttrLeaf("false"),
-											},
-										},
-									},
-								},
-							}}}),
-					testAccCheckCreated(model.CVEPolicy{
-						Rules: []model.CVEPolicyRule{{
-							Modified:     time.Time{},
-							Owner:        "test_user",
-							Name:         "Twistlock acceptance test CVE policy",
-							BlockMessage: "Not permitted",
-							Resources: map[string][]string{
-								"hosts":      {"foo/*"},
-								"images":     {"*"},
-								"containers": {"*"},
-								"labels":     {"*"},
-							},
-							Condition: model.CVECondition{
-								Vulnerabilities: []model.CVEVulnerability{
-									{ID: 46, Block: true, MinimumSeverity: 7},
-									{ID: 413, Block: false, MinimumSeverity: 9},
-								},
-								CVEs: model.CVERule{
-									IDs:       []string{"CVE-2017-1234", "CVE-2017-2308"},
-									Effect:    model.CVEEffectIgnore,
-									OnlyFixed: false,
-								},
-							},
-							Verbose: true,
-						}},
-						PolicyType: "cve",
-						ID:         "cve",
-					}),
-				),
+								"verbose": true
+							}],
+							"policyType": "cve",
+							"_id": "cve"
+						}`,
+				}),*/
 			},
 		},
 	})
@@ -168,15 +67,24 @@ func testAccCheckCreated(expectedPolicy model.CVEPolicy) func(s *terraform.State
 			return err
 		}
 
-		if len(policy.Rules) != 1 {
-			return fmt.Errorf("found no policy rules")
+		expected := map[string]interface{}{}
+		actual := map[string]interface{}{}
+
+		err = json.Unmarshal([]byte(expectedPolicy.PolicyJSON), &expected)
+		if err != nil {
+			return err
 		}
 
-		// zero out the rule modified time, it's unpredictable
-		policy.Rules[0].Modified = time.Time{}
+		err = json.Unmarshal([]byte(policy.PolicyJSON), &actual)
+		if err != nil {
+			return err
+		}
 
-		if !reflect.DeepEqual(expectedPolicy, policy) {
-			return fmt.Errorf("incorrect rule resources, expected: %v, got: %v", expectedPolicy, policy)
+		stripUnusedFields(expected)
+		stripUnusedFields(actual)
+
+		if !reflect.DeepEqual(expected, actual) {
+			return fmt.Errorf("incorrect rule resources, expected: %#v, got: %#v", expected, actual)
 		}
 
 		return nil
@@ -186,12 +94,18 @@ func testAccCheckCreated(expectedPolicy model.CVEPolicy) func(s *terraform.State
 func testAccCVEPolicyDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(client.Client)
 
-	cvePolicy, err := client.ReadCVEPolicy()
+	p, err := client.ReadCVEPolicy()
 	if err != nil {
 		return err
 	}
 
-	if len(cvePolicy.Rules) > 0 {
+	policy := map[string]interface{}{}
+	err = json.Unmarshal([]byte(p.PolicyJSON), &policy)
+	if err != nil {
+		return err
+	}
+
+	if len(policy["rules"].([]interface{})) > 0 {
 		return fmt.Errorf("CVE Policy was not zeroed")
 	}
 
@@ -208,27 +122,35 @@ func testAccCVEPolicy_BasicConfig() string {
 	}
 
 	resource "twistlock_cve_policy" "test_cve_policy" {
-		rules = [
-			{"owner" = "test_user"
-			 "name" = "Twistlock acceptance test CVE policy"
-			 "resources" {
-			 	"hosts" = ["*"]
-			 	"images" = ["*", "foo/*"]
-			 	"labels" = ["*"]
-			 	"containers" = ["*"]
-			 }
-			 "condition" = {
-			 	"vulnerabilities" = [
-				 	{"id" = 46, "block" = true, "minimum_severity" = 9}
-			 	]
-				"cves" = {
-				 	"ids" = ["CVE-2017-1234"]
-				 	"effect" = "alert"
-				 	"only_fixed" = true
-			 	}
-			}
-			"verbose" = "true"}
-		]
+		policy_json = <<EOF
+	{
+		"version": "",
+		"rules": [{
+			"owner": "test_user",
+			"name": "Twistlock acceptance test CVE policy",
+			"modified":"2018-03-27T10:21:54.85Z",
+			"resources": {
+				"hosts": ["*"],
+				"images": ["*", "foo/*"],
+				"labels": ["*"],
+				"containers": ["*"]
+			},
+			"condition": {
+				"vulnerabilities": [
+					{"id": 46, "block": true, "minSeverity": 9}
+				],
+				"cves": {
+					"ids": ["CVE-2017-1234"],
+					"effect": "alert",
+					"onlyFixed": true
+				}
+			},
+			"verbose": true
+		}],
+		"policyType": "cve",
+		"_id": "cve"
+	}
+	EOF
 	}`
 }
 
@@ -242,28 +164,137 @@ func testAccCVEPolicy_UpdateConfig() string {
 	}
 
 	resource "twistlock_cve_policy" "test_cve_policy" {
-		rules = [
-			{"owner" = "test_user"
-			 "name" = "Twistlock acceptance test CVE policy"
-			 "resources" {
-			 	"hosts" = ["foo/*"]
-			 	"images" = ["*"]
-			 	"labels" = ["*"]
-			 	"containers" = ["*"]
-			 }
-			 "condition" = {
-			 	"vulnerabilities" = [
-					{"id" = 46, "block" = true, "minimum_severity" = 7},
-					{"id" = 413, "block" = false, "minimum_severity" = 9}
-			 	]
-				"cves" = {
-				 	"ids" = ["CVE-2017-1234", "CVE-2017-2308"]
-				 	"effect" = "ignore"
-				 	"only_fixed" = false
-			 	}
-			}
-			"verbose" = "true"
-			"block_message" = "Not permitted"}
-		]
+		policy_json = <<EOF
+	{
+		"version": "",
+		"rules": [{
+			"owner": "test_user",
+			"name": "Twistlock acceptance test CVE policy",
+			"modified":"2018-03-27T10:21:54.85Z",
+			"resources": {
+				"hosts": ["foo/*"],
+				"images": ["*"],
+				"labels": ["*"],
+				"containers": ["*"]
+			},
+			"condition": {
+				"vulnerabilities": [
+					{"id": 46, "block": true, "minSeverity": 7},
+					{"id": 413, "block": false, "minSeverity": 9}
+				],
+				"cves": {
+					"ids": ["CVE-2017-1234", "CVE-2017-2308"],
+					"effect": "ignore",
+					"onlyFixed": false
+				},
+			},
+			"verbose": "true",
+			"blockMsg": "Not permitted"
+		}],
+		"policyType": "cve",
+		"_id": "cve"
+	}
+	EOF
 	}`
+}
+
+func testAccCVEPolicyThereCanBeOnlyOne(t *testing.T) {
+	tooManyCVEPoliciesError, err := regexp.Compile("Only one CVE policy can be configured")
+	if err != nil {
+		t.Fatal("Could not compile CVE policy count check regular expression")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		CheckDestroy: testAccCVEPolicyDestroy,
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config:      testAccCVEPolicy_TooManyCVEPoliciesConfig(),
+				ExpectError: tooManyCVEPoliciesError,
+			},
+		},
+	})
+}
+
+func testAccCVEPolicy_TooManyCVEPoliciesConfig() string {
+	return `
+	resource "twistlock_machine_user" "test_user" {
+		"username" = "test-user"
+		"password" = "password"
+		"role" = "admin"
+		"auth_type" = "basic"
+	}
+
+	resource "twistlock_cve_policy" "test_cve_policy" {
+		rules = <<EOF
+	[{
+		"owner": "test_user"
+		"name": "Twistlock acceptance test CVE policy"
+		"resources": {
+			"hosts": ["*"]
+			"images": ["*"]
+			"labels": ["*"]
+			"containers": ["*"]
+		},
+		"condition": {
+			"vulnerabilities": [
+				{"id": 46, "block": true, "minSeverity": 9}
+			]
+			"cves": {
+				"ids": ["CVE-2017-1234"]
+				"effect": "alert"
+				"only_fixed": true
+			}
+		}
+		"verbose": "true"
+	}]
+	EOF
+	}
+
+	resource "twistlock_cve_policy" "system_ignore_twistlock_policy" {
+		rules = <<EOF
+	[{
+		"owner": "system"
+		"name": "Default - ignore Twistlock components"
+		"resources": {
+			"hosts": ["*"]
+			"images": ["twistlock*"]
+			"labels": ["*"]
+			"containers": ["*"]
+		}
+		"condition": {
+			"vulnerabilities": [
+				{"id": 46, "block": true, "minSeverity": 9}
+			]
+			"cves": {
+				"ids": ["CVE-2017-1234"]
+				"effect": "alert"
+				"onlyFixed": true
+			}
+		}
+		"verbose": "true"
+	}]
+	EOF
+	}`
+}
+
+// stripUnusedFields removes not-applicable or unused fields from the policy rules.
+//
+// See https://twistlock.desk.com/customer/en/portal/articles/2912404-twistlock-api-2-3?b_id=16619#policies_cve_get
+func stripUnusedFields(policy map[string]interface{}) {
+	for _, r := range policy["rules"].([]interface{}) {
+		m := r.(map[string]interface{})
+		delete(m, "previousName")
+		delete(m, "action")
+		delete(m, "group")
+		delete(m, "namespace")
+
+		c := m["condition"].(map[string]interface{})
+		delete(c, "readonly")
+		delete(c, "device")
+		delete(c, "envVars")
+	}
 }
