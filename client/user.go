@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/circleci/terraform-provider-twistlock/model"
@@ -46,6 +47,11 @@ func (c *Client) readUsers() ([]model.User, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Failed to read users: %s", string(body))
+	}
 
 	users := make([]model.User, 10)
 
