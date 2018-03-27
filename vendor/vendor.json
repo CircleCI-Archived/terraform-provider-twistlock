@@ -808,12 +808,6 @@
 			"revisionTime": "2018-03-09T06:24:32Z"
 		},
 		{
-			"checksumSHA1": "vdLUwBPAX/dtVsKYY8BnTUcyADg=",
-			"path": "github.com/sirupsen/logrus",
-			"revision": "f4ee69125072b22721efbe639bd0da9c9d19b8cc",
-			"revisionTime": "2018-02-28T22:01:33Z"
-		},
-		{
 			"checksumSHA1": "5QKvAdxb0E47Nzn7iI25AfgAvOI=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "be8372ae8ec5c6daaed3cc28ebf73c54b737c240",
