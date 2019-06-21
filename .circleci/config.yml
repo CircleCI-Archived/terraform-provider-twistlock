@@ -47,7 +47,6 @@ jobs:
           command: |
             curl \
               --fail \
-              --verbose \
               --include \
               --header 'Accept: text/plain' \
               --data-binary @coverage.out \
