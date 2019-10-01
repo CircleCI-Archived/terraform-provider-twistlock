@@ -1,13 +1,9 @@
 # Terraform Twistlock Provider
 
 ## Installing the plugin
-```bash
-$ go get -u github.com/circleci/terraform-provider-twistlock
-```
 
-Make sure that `${GOPATH}/bin` is on your `${PATH}`, if not add it:
 ```bash
-$ export PATH=${PATH}:${GOPATH}/bin
+make install
 ```
 
 Call `terraform init` before running other Terraform commands in a directory
@@ -15,31 +11,61 @@ that contains Twistlock configuration. Terraform will tell you to do this if it
 hasn't configured the Twistlock plugin before, or if you have upgraded the
 plugin.
 
-
 ## Building the provider locally
+
 ```bash
-$ make install
+make build
 ```
 
-## Running tests
+Make sure that `${GOPATH}/bin` is on your `${PATH}`, if not add it:
+
 ```bash
-$ make test
+export PATH=${PATH}:${GOPATH}/bin
+```
+
+### Testing your local build with Terraform
+
+```bash
+make dev-install
+```
+
+And then run terraform command in your project.
+
+## Creating release package
+
+```bash
+make release
+```
+
+Now we can create release package from local, and then upload to GitHub
+release page manually
+
+## Running tests
+
+```bash
+make test
 ```
 
 ## Running acceptance tests
+
 Acceptance tests require a local running Twistlock Console.
 
 Export env-vars to configure the provider
+
 ```bash
-$ export HISTCONTROL=ignorespace
-$   export TWISTLOCK_USERNAME='user'
-$   export TWISTLOCK_PASSWORD='password'
-$   export TWISTLOCK_BASE_URL=http://localhost:8081/api/v1
+export HISTCONTROL=ignorespace
+
+# leading space here can be used to ignore these commands stored in the shell
+# command history when you set "HISTCONTROL=ignorespace" above
+ export TWISTLOCK_USERNAME='user'
+ export TWISTLOCK_PASSWORD='password'
+ export TWISTLOCK_BASE_URL=http://localhost:8081/api/v1
 ```
 
 Run tests with
+
 ```bash
-$ make acceptance-test
+make acceptance-test
 ```
 
 ### Re-generating keys for the User resource tests
@@ -49,16 +75,18 @@ to verify that the encrypted, generated password can be decrypted.
 
 The secret key must have no passphrase in order to be usable during tests
 
-Re-generate the keys with:
+Re-generate the keys in the `macOS`:
+
 ```bash
-$ gpg --batch --gen-key gpg-key-generate.control
-$ gpg --export terraform-provider-twistlock@acceptance.test | base64 --break=76 > twistlock/testdata/test-gpg-keys/terraform.pub
-$ gpg --export-secret-keys terraform-provider-twistlock@acceptance.tes | base64 --break=76 > twistlock/testdata/test-gpg-keys/terraform.priv
-$ gpg --delete-secret-and-public-key terraform-provider-twistlock@acceptance.test
+gpg --batch --gen-key gpg-key-generate.control
+gpg --export terraform-provider-twistlock@acceptance.test | base64 --break=76 > twistlock/testdata/test-gpg-keys/terraform.pub
+gpg --export-secret-keys terraform-provider-twistlock@acceptance.tes | base64 --break=76 > twistlock/testdata/test-gpg-keys/terraform.priv
+gpg --delete-secret-and-public-key terraform-provider-twistlock@acceptance.test
 ```
 
 ## Sample terraform file
-```
+
+```terraform
 provider "twistlock" {
   "username" = "gordon"
   "password" = "gordon"
