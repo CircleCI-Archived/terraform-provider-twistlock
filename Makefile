@@ -27,9 +27,11 @@ release:
 
 	GOOS=linux GOARCH=amd64 go build -o $(NAME)_$(VERSION)
 	tar czf dist/$(NAME)-$(VERSION)-linux-amd64.tar.gz $(NAME)_$(VERSION)
+	rm $(NAME)_$(VERSION)
 
 	GOOS=darwin GOARCH=amd64 go build -o $(NAME)_$(VERSION)
 	tar czf dist/$(NAME)-$(VERSION)-darwin-amd64.tar.gz $(NAME)_$(VERSION)
+	rm $(NAME)_$(VERSION)
 
 install:
 	mkdir -p ~/.terraform.d/plugins
