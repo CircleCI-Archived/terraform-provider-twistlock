@@ -27,6 +27,22 @@ type TestingT interface {
 	Errorf(format string, args ...interface{})
 }
 
+// ComparisonAssertionFunc is a common function prototype when comparing two values.  Can be useful
+// for table driven tests.
+type ComparisonAssertionFunc func(TestingT, interface{}, interface{}, ...interface{}) bool
+
+// ValueAssertionFunc is a common function prototype when validating a single value.  Can be useful
+// for table driven tests.
+type ValueAssertionFunc func(TestingT, interface{}, ...interface{}) bool
+
+// BoolAssertionFunc is a common function prototype when validating a bool value.  Can be useful
+// for table driven tests.
+type BoolAssertionFunc func(TestingT, bool, ...interface{}) bool
+
+// ErrorAssertionFunc is a common function prototype when validating an error value.  Can be useful
+// for table driven tests.
+type ErrorAssertionFunc func(TestingT, error, ...interface{}) bool
+
 // Comparison a custom function that returns true on success and false on failure
 type Comparison func() (success bool)
 
@@ -38,21 +54,23 @@ type Comparison func() (success bool)
 //
 // This function does no assertion of any kind.
 func ObjectsAreEqual(expected, actual interface{}) bool {
-
 	if expected == nil || actual == nil {
 		return expected == actual
 	}
-	if exp, ok := expected.([]byte); ok {
-		act, ok := actual.([]byte)
-		if !ok {
-			return false
-		} else if exp == nil || act == nil {
-			return exp == nil && act == nil
-		}
-		return bytes.Equal(exp, act)
-	}
-	return reflect.DeepEqual(expected, actual)
 
+	exp, ok := expected.([]byte)
+	if !ok {
+		return reflect.DeepEqual(expected, actual)
+	}
+
+	act, ok := actual.([]byte)
+	if !ok {
+		return false
+	}
+	if exp == nil || act == nil {
+		return exp == nil && act == nil
+	}
+	return bytes.Equal(exp, act)
 }
 
 // ObjectsAreEqualValues gets whether two objects are equal, or if their
@@ -161,7 +179,11 @@ func messageFromMsgAndArgs(msgAndArgs ...interface{}) string {
 		return ""
 	}
 	if len(msgAndArgs) == 1 {
-		return msgAndArgs[0].(string)
+		msg := msgAndArgs[0]
+		if msgAsStr, ok := msg.(string); ok {
+			return msgAsStr
+		}
+		return fmt.Sprintf("%+v", msg)
 	}
 	if len(msgAndArgs) > 1 {
 		return fmt.Sprintf(msgAndArgs[0].(string), msgAndArgs[1:]...)
@@ -397,6 +419,17 @@ func NotNil(t TestingT, object interface{}, msgAndArgs ...interface{}) bool {
 	return Fail(t, "Expected value not to be nil.", msgAndArgs...)
 }
 
+// containsKind checks if a specified kind in the slice of kinds.
+func containsKind(kinds []reflect.Kind, kind reflect.Kind) bool {
+	for i := 0; i < len(kinds); i++ {
+		if kind == kinds[i] {
+			return true
+		}
+	}
+
+	return false
+}
+
 // isNil checks if a specified object is nil or not, without Failing.
 func isNil(object interface{}) bool {
 	if object == nil {
@@ -405,7 +438,14 @@ func isNil(object interface{}) bool {
 
 	value := reflect.ValueOf(object)
 	kind := value.Kind()
-	if kind >= reflect.Chan && kind <= reflect.Slice && value.IsNil() {
+	isNilableKind := containsKind(
+		[]reflect.Kind{
+			reflect.Chan, reflect.Func,
+			reflect.Interface, reflect.Map,
+			reflect.Ptr, reflect.Slice},
+		kind)
+
+	if isNilableKind && value.IsNil() {
 		return true
 	}
 
@@ -858,7 +898,7 @@ func Panics(t TestingT, f PanicTestFunc, msgAndArgs ...interface{}) bool {
 	}
 
 	if funcDidPanic, panicValue := didPanic(f); !funcDidPanic {
-		return Fail(t, fmt.Sprintf("func %#v should panic\n\tPanic value:\t%v", f, panicValue), msgAndArgs...)
+		return Fail(t, fmt.Sprintf("func %#v should panic\n\tPanic value:\t%#v", f, panicValue), msgAndArgs...)
 	}
 
 	return true
@@ -875,10 +915,10 @@ func PanicsWithValue(t TestingT, expected interface{}, f PanicTestFunc, msgAndAr
 
 	funcDidPanic, panicValue := didPanic(f)
 	if !funcDidPanic {
-		return Fail(t, fmt.Sprintf("func %#v should panic\n\tPanic value:\t%v", f, panicValue), msgAndArgs...)
+		return Fail(t, fmt.Sprintf("func %#v should panic\n\tPanic value:\t%#v", f, panicValue), msgAndArgs...)
 	}
 	if panicValue != expected {
-		return Fail(t, fmt.Sprintf("func %#v should panic with value:\t%v\n\tPanic value:\t%v", f, expected, panicValue), msgAndArgs...)
+		return Fail(t, fmt.Sprintf("func %#v should panic with value:\t%#v\n\tPanic value:\t%#v", f, expected, panicValue), msgAndArgs...)
 	}
 
 	return true
@@ -1309,7 +1349,7 @@ func typeAndKind(v interface{}) (reflect.Type, reflect.Kind) {
 }
 
 // diff returns a diff of both values as long as both are of the same type and
-// are a struct, map, slice or array. Otherwise it returns an empty string.
+// are a struct, map, slice, array or string. Otherwise it returns an empty string.
 func diff(expected interface{}, actual interface{}) string {
 	if expected == nil || actual == nil {
 		return ""
@@ -1322,12 +1362,18 @@ func diff(expected interface{}, actual interface{}) string {
 		return ""
 	}
 
-	if ek != reflect.Struct && ek != reflect.Map && ek != reflect.Slice && ek != reflect.Array {
+	if ek != reflect.Struct && ek != reflect.Map && ek != reflect.Slice && ek != reflect.Array && ek != reflect.String {
 		return ""
 	}
 
-	e := spewConfig.Sdump(expected)
-	a := spewConfig.Sdump(actual)
+	var e, a string
+	if et != reflect.TypeOf("") {
+		e = spewConfig.Sdump(expected)
+		a = spewConfig.Sdump(actual)
+	} else {
+		e = expected.(string)
+		a = actual.(string)
+	}
 
 	diff, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 		A:        difflib.SplitLines(e),
