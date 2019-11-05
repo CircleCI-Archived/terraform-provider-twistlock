@@ -1,6 +1,6 @@
 GOPACKAGES = "github.com/circleci/terraform-provider-twistlock/..."
 NAME = "terraform-provider-twistlock"
-VERSION = "v1.0.0"
+VERSION = "v1.1.0"
 
 OS_NAME := $(shell uname -s | tr A-Z a-z)
 
