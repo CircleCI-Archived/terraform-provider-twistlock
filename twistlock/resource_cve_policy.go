@@ -114,8 +114,8 @@ func resourceCVEPolicy() *schema.Resource {
 	}
 }
 func cveResourcesFromResource(d map[string]interface{}) map[string][]string {
-	converter := func(iface interface{}) []string {
-		l := iface.([]interface{})
+	converter := func(iFace interface{}) []string {
+		l := iFace.([]interface{})
 		slice := make([]string, len(l))
 		for i, e := range l {
 			slice[i] = e.(string)
@@ -158,7 +158,7 @@ func cveRuleFromResource(d map[string]interface{}) (*model.CVERule, error) {
 	for i, id := range ids {
 		stringIDs[i] = id.(string)
 	}
-
+	log.Printf("[INFO] cveRuleFromResource - stringIDs is %v", stringIDs)
 	return &model.CVERule{
 		IDs:       stringIDs,
 		Effect:    effect,
@@ -218,6 +218,7 @@ func cvePolicyRuleFromResource(d map[string]interface{}) (*model.CVEPolicyRule, 
 }
 
 func cvePolicyFromResource(d *schema.ResourceData) (*model.CVEPolicy, error) {
+	cveID := d.Id()
 	rulesData := d.Get("rules").([]interface{})
 	rules := make([]model.CVEPolicyRule, len(rulesData))
 	for i, resourceData := range rulesData {
@@ -230,6 +231,7 @@ func cvePolicyFromResource(d *schema.ResourceData) (*model.CVEPolicy, error) {
 
 	return &model.CVEPolicy{
 		Rules: rules,
+		ID:    cveID,
 	}, nil
 }
 
@@ -246,20 +248,26 @@ func resourceCVEPolicyCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.SetId("cve_policy")
+	d.SetId("cve")
 
-	return nil
+	return resourceCVEPolicyRead(d, m)
 }
 
 func resourceCVEPolicyRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(client.Client)
 
 	policy, err := client.ReadCVEPolicy()
+	log.Printf("[INFO] resourceCVEPolicyRead - policy is %v", policy)
+
 	if err != nil {
 		return err
 	}
 
-	d.Set("rules", policy.Rules)
+	rules := make([]interface{}, len(policy.Rules), len(policy.Rules))
+	for i, rule := range policy.Rules {
+		rules[i] = rule.Flatten()
+	}
+	d.Set("rules", rules)
 
 	return nil
 }

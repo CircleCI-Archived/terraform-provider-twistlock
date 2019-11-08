@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -102,4 +103,70 @@ func (e *CVEEffect) UnmarshalText(text []byte) error {
 		return fmt.Errorf("Invalid CVE Effect: %s", string(text))
 	}
 	return nil
+}
+
+func converter(values []string) []interface{} {
+	slice := make([]interface{}, len(values))
+	for i, e := range values {
+		slice[i] = e
+	}
+	return slice
+}
+
+func flattenRuleResources(resources map[string][]string) []interface{} {
+	m := make(map[string][]interface{})
+	m["hosts"] = converter(resources["hosts"])
+	m["images"] = converter(resources["images"])
+	m["labels"] = converter(resources["labels"])
+	m["containers"] = converter(resources["containers"])
+	return []interface{}{m}
+}
+
+func flattenCVEVul(v CVEVulnerability) map[string]interface{} {
+	out := make(map[string]interface{})
+	out["id"] = v.ID
+	out["block"] = v.Block
+	out["minimum_severity"] = v.MinimumSeverity
+	return out
+}
+
+func flattenRuleConditionVulnerabilities(vuln []CVEVulnerability) []interface{} {
+	m := make([]interface{}, len(vuln), len(vuln))
+
+	for i, v := range vuln {
+		m[i] = flattenCVEVul(v)
+	}
+
+	return m
+}
+
+func flattenRuleConditionCVEs(cves CVERule) []interface{} {
+	m := make(map[string]interface{})
+	m["ids"] = converter(cves.IDs)
+	m["effect"] = cves.Effect
+	m["only_fixed"] = cves.OnlyFixed
+
+	log.Printf("[INFO] flattenRuleConditionCVEs - m is %v", m)
+
+	return []interface{}{m}
+}
+
+func flattenRuleCondition(condition CVECondition) []interface{} {
+	m := make(map[string]interface{})
+	m["vulnerabilities"] = flattenRuleConditionVulnerabilities(condition.Vulnerabilities)
+	m["cves"] = flattenRuleConditionCVEs(condition.CVEs)
+	return []interface{}{m}
+}
+
+// Flatten returns flattened data structure used to refresh in-memory resourceData
+func (rule CVEPolicyRule) Flatten() map[string]interface{} {
+	m := make(map[string]interface{})
+	m["owner"] = rule.Owner
+	m["name"] = rule.Name
+	m["resources"] = flattenRuleResources(rule.Resources)
+	m["condition"] = flattenRuleCondition(rule.Condition)
+	m["block_message"] = rule.BlockMessage
+	m["verbose"] = rule.Verbose
+
+	return m
 }
