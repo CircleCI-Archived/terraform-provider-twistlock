@@ -1,3 +1,7 @@
+# Deprecated
+
+This repository is deprecated in favour of the official [Prisma Cloud provider](https://www.terraform.io/docs/providers/prismacloud/index.html).
+
 # Terraform Twistlock Provider
 
 ## Installing the plugin
